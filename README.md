@@ -19,7 +19,7 @@ It integrates Machine Learning (ML) for disease prediction and Explainable AI (X
 ```mermaid
 graph TD
 A[User Camera Input] --> B[Signal Preprocessing]
-B --> C[Feature Extraction (HR, HRV)]
+B --> C[Feature Extraction - HR & HRV]
 C --> D[Machine Learning Model]
 D --> E[Prediction Output]
 E --> F[SHAP Explainability Layer]
