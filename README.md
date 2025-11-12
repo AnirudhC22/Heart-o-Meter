@@ -16,15 +16,17 @@ It integrates Machine Learning (ML) for disease prediction and Explainable AI (X
 ---
 
 ## 🧩 System Architecture
-Mermaid Code
+
+```mermaid
 graph TD
-A[User Camera Input] --> B[Signal Preprocessing]
-B --> C[Feature Extraction - HR & HRV]
-C --> D[Machine Learning Model]
-D --> E[Prediction Output]
-E --> F[SHAP Explainability Layer]
-F --> G[Gemini API - Natural Language Summary]
-G --> H[Web UI Display]
+    A[User Camera Input] --> B[Signal Preprocessing]
+    B --> C[Feature Extraction - HR & HRV]
+    C --> D[Machine Learning Model]
+    D --> E[Prediction Output]
+    E --> F[SHAP Explainability Layer]
+    F --> G[Gemini API - Natural Language Summary]
+    G --> H[Web UI Display]
+```
 
 
 📁 Project Structure
