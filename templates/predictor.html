@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Heart-o-Meter Predictor</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- D3.js for charting -->
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@400;700&display=swap" rel="stylesheet">
+    
+    <!-- Chart.js for SHAP plot -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- jsPDF and html2canvas for PDF report -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <!-- Plotly.js for Population plots -->
+    <script src="https://cdn.plot.ly/plotly-2.33.0.min.js"></script>
+
+    <style>
+        body {
+            font-family: 'Kanit', sans-serif;
+        }
+        
+        .roller {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 100%;
+            height: 12px;
+            background: linear-gradient(90deg, #0609c8, #7a0e06);
+            border-radius: 10px;
+            outline: none;
+            transition: background 0.3s;
+        }
+        .roller::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 30px;
+            height: 30px;
+            background: #06ffac;
+            border-radius: 50%;
+            cursor: pointer;
+            transition: background 0.3s, transform 0.3s;
+        }
+        .roller::-webkit-slider-thumb:hover {
+            background: #05df43;
+            transform: scale(1.2);
+        }
+        
+        /* Custom label style */
+        .slider-label {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .slider-value {
+            font-weight: 600;
+            color: #06ffac; /* Updated to green */
+        }
+        
+        /* Style for the result box */
+        #result-box.high-risk {
+            background-color: #450a0a; /* dark red */
+            border-color: #ef4444; /* red-500 */
+            color: #fca5a5; /* red-300 */
+        }
+        #result-box.low-risk {
+            background-color: #064e3b; /* dark green */
+            border-color: #22c55e; /* green-500 */
+            color: #a7f3d0; /* green-200 */
+        }
+
+        /* D3 Chart styles */
+        #ppg-chart .line { fill: none; stroke: #ef4444; stroke-width: 2px; }
+        #ppg-chart .axis path, #ppg-chart .axis line { fill: none; stroke: #6b7280; stroke-width: 1px; }
+        #ppg-chart .axis text { font-size: 10px; fill: #9ca3af; }
+
+        /* --- ADDED: Style for disabled button --- */
+        button:disabled,
+        button[disabled] {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+    </style>
+</head>
+<body class="bg-gray-900 text-gray-300">
+
+    <div class="container mx-auto p-4 md:p-8">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+            
+            <!-- Left Column: Inputs -->
+            <div class="md:col-span-1 bg-gray-800 p-6 rounded-2xl shadow-2xl">
+                <h2 class="text-2xl font-bold text-white mb-6 border-b border-gray-700 pb-4">Patient Data Input 🩺</h2>
+                
+                <!-- Live PPG Measurement Section -->
+                <div id="ppg-section" class="mb-8">
+                    <h3 class="text-lg font-semibold text-white mb-3">Live PPG Measurement</h3>
+                    <button type="button" id="start-ppg-button" class="w-full bg-green-500 text-white font-bold py-2 px-4 rounded-lg hover:bg-green-600 transition duration-300">
+                        Start Measurement
+                    </button>
+                    <div id="ppg-status" class="mt-3 text-sm text-gray-400 text-center">
+                        Press start to measure HR and HRV.
+                    </div>
+                    <video id="video" playsinline autoplay muted class="w-full rounded-lg mt-4 border border-gray-700 hidden"></video>
+                    <div id="ppg-chart" class="mt-4 bg-gray-900 rounded-lg"></div>
+                    <canvas id="output-canvas" class="hidden"></canvas>
+                </div>
+                
+                <form id="prediction-form">
+                    <div class="space-y-4">
+                        <h3 class="text-lg font-semibold text-white">Numeric Features</h3>
+                        
+                        <!-- Age -->
+                        <div>
+                            <label for="Age" class="slider-label text-gray-300"><span>Age</span><span id="Age-value" class="slider-value">58</span></label>
+                            <p class="text-sm text-gray-400 mt-1">Your age in years.</p>
+                            <input type="range" id="Age" name="Age" min="20" max="100" value="58" class="roller" oninput="document.getElementById('Age-value').innerText = this.value">
+                        </div>
+
+                        <!-- RestingBP -->
+                        <div>
+                            <label for="RestingBP" class="slider-label text-gray-300"><span>Resting Blood Pressure</span><span id="RestingBP-value" class="slider-value">148</span></label>
+                            <p class="text-sm text-gray-400 mt-1">The pressure in your arteries (in mm Hg) when your heart is at rest, between beats. A normal value is typically below 120.</p>
+                            <input type="range" id="RestingBP" name="RestingBP" min="80" max="220" value="148" class="roller" oninput="document.getElementById('RestingBP-value').innerText = this.value">
+                        </div>
+
+                        <!-- Cholesterol -->
+                        <div>
+                            <label for="Cholesterol" class="slider-label text-gray-300"><span>Cholesterol</span><span id="Cholesterol-value" class="slider-value">270</span></label>
+                            <p class="text-sm text-gray-400 mt-1">Your total serum cholesterol level (in mg/dl). High levels can increase your risk. A '0' value in some datasets means the data was missing.</p>
+                            <input type="range" id="Cholesterol" name="Cholesterol" min="100" max="600" value="270" class="roller" oninput="document.getElementById('Cholesterol-value').innerText = this.value">
+                        </div>
+
+                         <!-- MaxHR -->
+                        <div>
+                            <label for="MaxHR" class="slider-label text-gray-300"><span>Maximum Heart Rate</span><span id="MaxHR-value" class="slider-value">135</span></label>
+                            <p class="text-sm text-gray-400 mt-1">The highest heart rate (in beats per minute) you achieved during a stress test. A lower-than-expected max heart rate can be a sign of a heart condition.</p>
+                            <input type="range" id="MaxHR" name="MaxHR" min="60" max="220" value="135" class="roller" oninput="document.getElementById('MaxHR-value').innerText = this.value">
+                        </div>
+
+                        <!-- Oldpeak -->
+                        <div>
+                            <label for="Oldpeak" class="slider-label text-gray-300"><span>Oldpeak (ST Depression)</span><span id="Oldpeak-value" class="slider-value">1.8</span></label>
+                            <p class="text-sm text-gray-400 mt-1">This measures a specific change (a "dip") on your EKG (electrocardiogram) during exercise compared to when you're at rest. A higher value can indicate stress on the heart.</p>
+                            <input type="range" id="Oldpeak" name="Oldpeak" min="0.0" max="7.0" value="1.8" step="0.1" class="roller" oninput="document.getElementById('Oldpeak-value').innerText = this.value">
+                        </div>
+
+                        <!-- HRV -->
+                        <div>
+                            <label for="HRV" class="slider-label text-gray-300"><span>Heart Rate Variability (HRV)</span><span id="HRV-value" class="slider-value">52.0</span></label>
+                             <p class="text-sm text-gray-400 mt-1">The natural variation in time (in milliseconds) between each of your heartbeats. Generally, a *higher* HRV is a sign of a healthy, adaptable heart.</p>
+                            <input type="range" id="HRV" name="HRV" min="20.0" max="120.0" value="52.0" step="0.1" class="roller" oninput="document.getElementById('HRV-value').innerText = this.value">
+                        </div>
+
+                         <!-- RestingHR -->
+                        <div>
+                            <label for="RestingHR" class="slider-label text-gray-300"><span>Resting Heart Rate</span><span id="RestingHR-value" class="slider-value">82</span></label>
+                            <p class="text-sm text-gray-400 mt-1">The number of times your heart beats per minute while you are at complete rest. This value is often measured by your camera's PPG sensor.</p>
+                            <input type="range" id="RestingHR" name="RestingHR" min="50" max="100" value="82" step="1" class="roller" oninput="document.getElementById('RestingHR-value').innerText = this.value">
+                        </div>
+
+                         <!-- FastingBS -->
+                         <div>
+                            <label for="FastingBS" class="block text-sm font-medium text-gray-300">Fasting Blood Sugar > 120 mg/dl</label>
+                            <p class="text-sm text-gray-400 mt-1 mb-2">Is your blood sugar level higher than 120 mg/dl after not eating for at least 8 hours? High fasting blood sugar is a key sign of diabetes, a major risk factor for heart disease.</p>
+                            <select id="FastingBS" name="FastingBS" class="block w-full pl-3 pr-10 py-2 text-base border-gray-600 bg-gray-700 text-white focus:outline-none focus:ring-2 focus:ring-green-400 rounded-md">
+                                <option value="1" selected>Yes (1)</option>
+                                <option value="0">No (0)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="space-y-4 mt-6">
+                        <h3 class="text-lg font-semibold text-white">Categorical Features</h3>
+                        
+                        <!-- Sex -->
+                        <div>
+                            <label for="Sex" class="block text-sm font-medium text-gray-300">Sex</label>
+                            <p class="text-sm text-gray-400 mt-1 mb-2">Your biological sex (Male or Female).</p>
+                            <select id="Sex" name="Sex" class="block w-full pl-3 pr-10 py-2 text-base border-gray-600 bg-gray-700 text-white focus:outline-none focus:ring-2 focus:ring-green-400 rounded-md">
+                                <option>M</option>
+                                <option>F</option>
+                            </select>
+                        </div>
+
+                         <!-- ChestPainType -->
+                         <div>
+                            <label for="ChestPainType" class="block text-sm font-medium text-gray-300">Chest Pain Type</label>
+                            <p class="text-sm text-gray-400 mt-1 mb-2">
+                                <b>ASY:</b> Asymptomatic (you feel no chest pain).<br>
+                                <b>ATA:</b> Atypical Angina (chest pain not typical of a heart issue).<br>
+                                <b>NAP:</b> Non-Anginal Pain (chest pain not related to your heart).<br>
+                                <b>TA:</b> Typical Angina (classic heart-related chest pain).
+                            </p>
+                            <select id="ChestPainType" name="ChestPainType" class="block w-full pl-3 pr-10 py-2 text-base border-gray-600 bg-gray-700 text-white focus:outline-none focus:ring-2 focus:ring-green-400 rounded-md">
+                                <option>ASY</option>
+                                <option>ATA</option>
+                                <option>NAP</option>
+                                <option>TA</option>
+                            </select>
+                        </div>
+
+                        <!-- RestingECG -->
+                         <div>
+                            <label for="RestingECG" class="block text-sm font-medium text-gray-300">Resting ECG</label>
+                            <p class="text-sm text-gray-400 mt-1 mb-2">
+                                The result of your EKG (electrocardiogram) while resting.<br>
+                                <b>Normal:</b> No abnormalities.<br>
+                                <b>ST:</b> An abnormality in the ST-T wave (part of your heartbeat).<br>
+                                <b>LVH:</b> Left Ventricular Hypertrophy (thickening of the heart's main pumping chamber).
+                            </p>
+                            <select id="RestingECG" name="RestingECG" class="block w-full pl-3 pr-10 py-2 text-base border-gray-600 bg-gray-700 text-white focus:outline-none focus:ring-2 focus:ring-green-400 rounded-md">
+                                <option>Normal</option>
+                                <option>ST</option>
+                                <option>LVH</option>
+                            </select>
+                        </div>
+
+                         <!-- ExerciseAngina -->
+                         <div>
+                            <label for="ExerciseAngina" class="block text-sm font-medium text-gray-300">Exercise-Induced Angina</label>
+                            <p class="text-sm text-gray-400 mt-1 mb-2">Did you feel chest pain (angina) *during* strenuous exercise? This is a strong indicator of heart problems.</p>
+                            <select id="ExerciseAngina" name="ExerciseAngina" class="block w-full pl-3 pr-10 py-2 text-base border-gray-600 bg-gray-700 text-white focus:outline-none focus:ring-2 focus:ring-green-400 rounded-md">
+                                <option>N</option>
+                                <option>Y</option>
+                            </select>
+                        </div>
+
+                        <!-- ST_Slope -->
+                         <div>
+                            <label for="ST_Slope" class="block text-sm font-medium text-gray-300">ST Slope</label>
+                            <p class="text-sm text-gray-400 mt-1 mb-2">
+                                The slope of your EKG's "ST segment" during peak exercise. This is a very strong predictor.<br>
+                                <b>Up:</b> Upsloping (generally normal).<br>
+                                <b>Flat:</b> Horizontal (can be a sign of issues).<br>
+                                <b>Down:</b> Downsloping (a strong indicator of a heart problem).
+                            </p>
+                            <select id="ST_Slope" name="ST_Slope" class="block w-full pl-3 pr-10 py-2 text-base border-gray-600 bg-gray-700 text-white focus:outline-none focus:ring-2 focus:ring-green-400 rounded-md">
+                                <option>Flat</option>
+                                <option>Up</option>
+                                <option>Down</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <button type="submit" id="predict-button" class="mt-8 w-full bg-blue-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-blue-700 transition duration-300">
+                        Predict Risk
+                    </button>
+                </form>
+
+                <!-- 
+                    The script to toggle info-boxes is no longer needed
+                    as the explanations are always visible.
+                -->
+            </div>
+
+            <!-- Right Column: Results -->
+            <div class="md:col-span-2">
+                <div class="bg-gray-800 p-6 rounded-2xl shadow-2xl">
+                    <h1 class="text-3xl font-bold text-white mb-2">Heart-o-Meter 🫀</h1>
+                    <p class="text-gray-400 mb-6">Enter patient data on the left to calculate the risk of heart disease.</p>
+                    
+                    <div id="result-box" class="border-l-4 p-4 rounded-md bg-gray-700 border-gray-600">
+                        <h3 class="text-lg font-bold mb-2 text-white">Prediction Result</h3>
+                        <p id="result-text" class="text-gray-300">Awaiting input...</p>
+                    </div>
+
+                    <div id="loading" class="mt-4 hidden text-center">
+                        <p class="text-blue-400">Calculating...</p>
+                    </div>
+
+                    <!-- AI ANALYSIS SECTION -->
+                    <div class="mt-6">
+                        <button type="button" id="go-to-analysis-button" class="w-full bg-purple-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-purple-700 transition duration-300" disabled>
+                            View AI Analysis & Report
+                        </button>
+                    </div>
+                    <!-- END: AI ANALYSIS SECTION -->
+
+
+                    <!-- START: Population Plots Container -->
+                    <div class="bg-gray-800 p-0 md:p-6 rounded-lg mt-8">
+                        <h3 class="text-xl font-bold mb-4 text-white text-center">Your Profile vs. Population Data</h3>
+                        
+                        <div id="Oldpeak-plot" class="w-full h-40 md:h-48 mb-2"></div>
+                        <div id="MaxHR-plot" class="w-full h-40 md:h-48 mb-2"></div>
+                        <div id="RestingHR-plot" class="w-full h-40 md:h-48 mb-2"></div>
+                        <div id="Cholesterol-plot" class="w-full h-40 md:h-48 mb-2"></div>
+                        <div id="RestingBP-plot" class="w-full h-44 md:h-48"></div>
+                    </div>
+                    <!-- END: Population Plots Container -->
+
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- 
+      This script tag MUST be at the BOTTOM of your <body>
+      It loads all the JavaScript logic for the page.
+    -->
+    <script src="https://cdn.plot.ly/plotly-2.33.0.min.js"></script>
+    <script src="{{ url_for('static', filename='script.js') }}?v=1.2"></script>
+    
+</body>
+</html>

@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Heart Failure Prediction</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            /* This 'url_for' tells Flask to look in the 'static' folder */
+            background: url("{{ url_for('static', filename='heart-background.jpg') }}") no-repeat center center fixed;
+            background-size: cover;
+        }
+    </style>
+</head>
+<title>Heart Failure Prediction</title>
+<body>
+    <div class="flex flex-col items-center justify-center min-h-screen bg-grey-200">
+        <div class="bg-gray-800 p-12 h-[500px] rounded-xl shadow-lg text-center w-full max-w-6xl">
+            <div>
+                <h1 class="text-8xl font-extrabold text-gray-100 mb-4">Heart-o-Meter</h1>
+            </div>
+            <div>
+                <p class="text-gray-200 text-lg leading-relaxed mt-10">
+                    Predict heart failure risks with our AI-powered tool, enhanced by Explainable AI (XAI) for transparent insights. Get detailed reports highlighting key health indicators and risk probabilities. Empower early diagnosis and informed medical decisions.
+                </p>
+            </div>
+            <div class="mt-6">
+                <a href="{{ url_for('predictor_page') }}">
+                <button class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-8 px-12 rounded-full text-2xl shadow-md transition-transform transform hover:scale-105 mt-10">
+                    Start Analysis
+                </button>
+            </a>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
+
