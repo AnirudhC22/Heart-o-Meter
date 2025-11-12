@@ -16,7 +16,7 @@ It integrates Machine Learning (ML) for disease prediction and Explainable AI (X
 ---
 
 ## 🧩 System Architecture
-#Mermaid Code
+Mermaid Code
 graph TD
 A[User Camera Input] --> B[Signal Preprocessing]
 B --> C[Feature Extraction - HR & HRV]
@@ -90,7 +90,7 @@ Open for Collaboration ❤️
 
 Create (or replace) a `.gitignore` file in your root folder with this content:
 
-```gitignore
+gitignore
 # Python cache and environment
 __pycache__/
 *.py[cod]
