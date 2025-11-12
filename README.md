@@ -30,7 +30,7 @@ graph TD
 
 
 📁 Project Structure
-
+```
 Heart-o-Meter/
 │
 ├── app/                     # Main web application
@@ -41,6 +41,7 @@ Heart-o-Meter/
 ├── requirements.txt          # Python dependencies
 ├── .gitignore
 └── README.md
+```
 🧠 Technologies Used
 Frontend: HTML, CSS, JavaScript
 
@@ -87,64 +88,3 @@ C.Anirudh — Project Lead
 
 Open for Collaboration ❤️
 ---
-
-## 🧹 **2. Ideal `.gitignore` File for Python + Web Projects**
-
-Create (or replace) a `.gitignore` file in your root folder with this content:
-
-gitignore
-# Python cache and environment
-__pycache__/
-*.py[cod]
-*.pyo
-*.pyd
-*.so
-*.egg-info/
-build/
-dist/
-.eggs/
-.env/
-venv/
-ENV/
-env/
-.venv/
-heart_disease_env/
-
-# IDE settings
-.vscode/
-.idea/
-*.swp
-*.swo
-
-# OS files
-.DS_Store
-Thumbs.db
-
-# Logs and temp files
-*.log
-*.tmp
-*.bak
-
-# Node (if web frontend)
-node_modules/
-npm-debug.log
-yarn-debug.log
-yarn-error.log
-
-# ML / Data files
-*.csv
-*.json
-*.pkl
-*.h5
-*.hdf5
-*.model
-*.weights
-
-# Notebook checkpoints
-.ipynb_checkpoints/
-
-# Secrets
-*.env
-*.key
-*.pem
-config.json
