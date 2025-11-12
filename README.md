@@ -16,7 +16,7 @@ It integrates Machine Learning (ML) for disease prediction and Explainable AI (X
 ---
 
 ## 🧩 System Architecture
-```mermaid
+#Mermaid Code
 graph TD
 A[User Camera Input] --> B[Signal Preprocessing]
 B --> C[Feature Extraction - HR & HRV]
@@ -25,9 +25,10 @@ D --> E[Prediction Output]
 E --> F[SHAP Explainability Layer]
 F --> G[Gemini API - Natural Language Summary]
 G --> H[Web UI Display]
+
+
 📁 Project Structure
-csharp
-Copy code
+
 Heart-o-Meter/
 │
 ├── app/                     # Main web application
@@ -50,8 +51,7 @@ Explainability: SHAP, Gemini API
 Visualization: Matplotlib, Plotly
 
 🚀 How to Run Locally
-bash
-Copy code
+
 # 1️⃣ Clone the repo
 git clone https://github.com/AnirudhC22/Heart-o-Meter.git
 cd Heart-o-Meter
@@ -81,13 +81,9 @@ Enable continuous health tracking via web interface
 This project is licensed under the MIT License.
 
 ✨ Contributors
-Anirudh C — Project Lead
+C.Anirudh — Project Lead
 
 Open for Collaboration ❤️
-
-yaml
-Copy code
-
 ---
 
 ## 🧹 **2. Ideal `.gitignore` File for Python + Web Projects**
